@@ -25,6 +25,17 @@ locals {
     # These service accounts are subject to the PHI Data Access Policy.
     # -------------------------------------------------------------------------
 
+    "pt-engage" = {
+      display_name   = "Patient Engagement Hub"
+      description    = "Service account for Patient Engagement Hub (prod) — Digital Health."
+      team           = "digital-health"
+      data_class     = "phi"
+      hipaa_in_scope = "true"
+      cost_center    = ""          
+      env            = "prod"
+      function       = "runtime"   
+    }
+
     "ehr-core" = {
       display_name     = "EHR Core System"
       description      = "Service account for EHR Core System (prod) — Clinical Engineering. Handles HL7 FHIR API requests to Cloud SQL and GCS."
@@ -322,6 +333,22 @@ resource "google_project_iam_custom_role" "sa_metadata" {
   project     = each.value.env == "prod" ? var.prod_project_id : var.nonprod_project_id
   title       = "SA Metadata — ${each.value.display_name}"
   description = "Metadata role for service account ${each.key}-${each.value.env}-svc. app=${each.key} env=${each.value.env} owner=${each.value.team} data-classification=${each.value.data_class} hipaa-in-scope=${each.value.hipaa_in_scope} cost-center=${each.value.cost_center} managed-by=terraform"
+  permissions = []
+  stage       = "GA"
+}
+
+resource "google_service_account" "pt_engage_prod_runtime" {
+  project      = var.prod_project_id
+  account_id   = "pt-engage-prod-runtime"   
+  display_name = "Patient Engagement Hub"
+  description  = "Service account for Patient Engagement Hub (prod) — Digital Health."
+}
+
+resource "google_project_iam_custom_role" "sa_metadata_pt_engage" {
+  role_id     = "saMetadata_pt_engage_prod"
+  project     = var.prod_project_id
+  title       = "SA Metadata — Patient Engagement Hub"
+  description = "app=pt-engage env=prod owner=digital-health data-classification=phi hipaa-in-scope=true managed-by=terraform"
   permissions = []
   stage       = "GA"
 }
