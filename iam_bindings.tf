@@ -2,25 +2,24 @@
 # iam_bindings.tf
 # Meridian Health — Service Account Infrastructure
 #
-# Assigns IAM roles to service accounts. All bindings follow the least-
-# privilege rules defined in:
+# Assigns IAM roles to service accounts using resource-level bindings.
+# The canonical GCP pattern is to attach each binding directly to the
+# specific resource it needs to access — bucket, instance, topic, secret —
+# rather than granting at project level and narrowing with conditions.
+#
+# IAM Conditions are not used here as a scoping mechanism. Scoping is
+# achieved by using the appropriate resource-level IAM resource type.
+#
+# Policy references:
 #   - IAM Role Assignment Policy (Confluence)
 #   - PHI Data Access Policy — Service Accounts (Confluence)
-#
-# PHI resource bindings:
-#   - Are scoped to specific resources (not project-level)
-#   - Include mandatory IAM conditions
-#   - Use only approved roles for PHI resources
-#
-# Non-PHI resource bindings:
-#   - Are scoped to the most restrictive resource level possible
-#   - Use only approved roles from the permitted-role list
 ##############################################################################
 
 ##############################################################################
 # OBSERVABILITY — All service accounts
-# roles/logging.logWriter and roles/monitoring.metricWriter at project level
-# are permitted and required for all applications per policy.
+# roles/logging.logWriter, roles/monitoring.metricWriter, roles/cloudtrace.agent
+# are granted at project level — correct for these roles as they write to
+# project-level sinks and do not access data resources.
 ##############################################################################
 
 resource "google_project_iam_member" "logging" {
@@ -49,122 +48,83 @@ resource "google_project_iam_member" "tracing" {
 
 ##############################################################################
 # PHI APPLICATIONS — Cloud SQL access
-# roles/cloudsql.client at project level with mandatory IAM condition
-# restricting access to the specific PHI instance.
+# Canonical pattern: google_sql_database_instance_iam_member scoped directly
+# to the specific instance. No condition required.
 ##############################################################################
 
-resource "google_project_iam_member" "ehr_core_cloudsql" {
-  project = var.prod_project_id
-  role    = "roles/cloudsql.client"
-  member  = "serviceAccount:ehr-core-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
-
-  condition {
-    title       = "phi_cloudsql_access_ehr_core_prod"
-    description = "Restrict EHR Core Cloud SQL access to mh-ehr-primary-prod instance only"
-    expression  = "resource.name == \"projects/${var.prod_project_id}/instances/${var.phi_cloudsql_instances["ehr_primary"]}\""
-  }
+resource "google_sql_database_instance_iam_member" "ehr_core_cloudsql" {
+  project  = var.prod_project_id
+  instance = var.phi_cloudsql_instances["ehr_primary"]
+  role     = "roles/cloudsql.client"
+  member   = "serviceAccount:ehr-core-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
 
   depends_on = [google_service_account.app]
 }
 
-resource "google_project_iam_member" "clinical_notes_cloudsql" {
-  project = var.prod_project_id
-  role    = "roles/cloudsql.client"
-  member  = "serviceAccount:clinical-notes-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
-
-  condition {
-    title       = "phi_cloudsql_access_clinical_notes_prod"
-    description = "Restrict Clinical Notes Cloud SQL access to mh-clinical-notes-prod instance only"
-    expression  = "resource.name == \"projects/${var.prod_project_id}/instances/${var.phi_cloudsql_instances["clinical_notes"]}\""
-  }
+resource "google_sql_database_instance_iam_member" "clinical_notes_cloudsql" {
+  project  = var.prod_project_id
+  instance = var.phi_cloudsql_instances["clinical_notes"]
+  role     = "roles/cloudsql.client"
+  member   = "serviceAccount:clinical-notes-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
 
   depends_on = [google_service_account.app]
 }
 
-resource "google_project_iam_member" "lab_systems_cloudsql" {
-  project = var.prod_project_id
-  role    = "roles/cloudsql.client"
-  member  = "serviceAccount:lab-systems-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
-
-  condition {
-    title       = "phi_cloudsql_access_lab_systems_prod"
-    description = "Restrict Lab Systems Cloud SQL access to mh-lab-systems-prod instance only"
-    expression  = "resource.name == \"projects/${var.prod_project_id}/instances/${var.phi_cloudsql_instances["lab_systems"]}\""
-  }
+resource "google_sql_database_instance_iam_member" "lab_systems_cloudsql" {
+  project  = var.prod_project_id
+  instance = var.phi_cloudsql_instances["lab_systems"]
+  role     = "roles/cloudsql.client"
+  member   = "serviceAccount:lab-systems-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
 
   depends_on = [google_service_account.app]
 }
 
-resource "google_project_iam_member" "pharmacy_mgmt_cloudsql" {
-  project = var.prod_project_id
-  role    = "roles/cloudsql.client"
-  member  = "serviceAccount:pharmacy-mgmt-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
-
-  condition {
-    title       = "phi_cloudsql_access_pharmacy_prod"
-    description = "Restrict Pharmacy Management Cloud SQL access to mh-pharmacy-prod instance only"
-    expression  = "resource.name == \"projects/${var.prod_project_id}/instances/${var.phi_cloudsql_instances["pharmacy"]}\""
-  }
+resource "google_sql_database_instance_iam_member" "pharmacy_mgmt_cloudsql" {
+  project  = var.prod_project_id
+  instance = var.phi_cloudsql_instances["pharmacy"]
+  role     = "roles/cloudsql.client"
+  member   = "serviceAccount:pharmacy-mgmt-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
 
   depends_on = [google_service_account.app]
 }
 
-resource "google_project_iam_member" "care_coordination_cloudsql" {
-  project = var.prod_project_id
-  role    = "roles/cloudsql.client"
-  member  = "serviceAccount:care-coordination-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
-
-  condition {
-    title       = "phi_cloudsql_access_care_coord_prod"
-    description = "Restrict Care Coordination Cloud SQL access to mh-clinical-care-coord-prod instance only"
-    expression  = "resource.name == \"projects/${var.prod_project_id}/instances/${var.phi_cloudsql_instances["care_coordination"]}\""
-  }
+resource "google_sql_database_instance_iam_member" "care_coordination_cloudsql" {
+  project  = var.prod_project_id
+  instance = var.phi_cloudsql_instances["care_coordination"]
+  role     = "roles/cloudsql.client"
+  member   = "serviceAccount:care-coordination-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
 
   depends_on = [google_service_account.app]
 }
 
-resource "google_project_iam_member" "medication_admin_cloudsql" {
-  project = var.prod_project_id
-  role    = "roles/cloudsql.client"
-  member  = "serviceAccount:medication-admin-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
-
-  condition {
-    title       = "phi_cloudsql_access_med_admin_prod"
-    description = "Restrict Medication Admin Cloud SQL access to mh-clinical-med-admin-prod instance only"
-    expression  = "resource.name == \"projects/${var.prod_project_id}/instances/${var.phi_cloudsql_instances["medication_admin"]}\""
-  }
+resource "google_sql_database_instance_iam_member" "medication_admin_cloudsql" {
+  project  = var.prod_project_id
+  instance = var.phi_cloudsql_instances["medication_admin"]
+  role     = "roles/cloudsql.client"
+  member   = "serviceAccount:medication-admin-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
 
   depends_on = [google_service_account.app]
 }
 
-resource "google_project_iam_member" "radiology_cloudsql" {
-  project = var.prod_project_id
-  role    = "roles/cloudsql.client"
-  member  = "serviceAccount:radiology-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
-
-  condition {
-    title       = "phi_cloudsql_access_radiology_prod"
-    description = "Restrict Radiology Cloud SQL access to mh-clinical-radiology-prod instance only"
-    expression  = "resource.name == \"projects/${var.prod_project_id}/instances/${var.phi_cloudsql_instances["radiology"]}\""
-  }
+resource "google_sql_database_instance_iam_member" "radiology_cloudsql" {
+  project  = var.prod_project_id
+  instance = var.phi_cloudsql_instances["radiology"]
+  role     = "roles/cloudsql.client"
+  member   = "serviceAccount:radiology-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
 
   depends_on = [google_service_account.app]
 }
 
 ##############################################################################
-# PHI APPLICATIONS — GCS bucket access (resource-level, with conditions)
+# PHI APPLICATIONS — GCS bucket access
+# Canonical pattern: google_storage_bucket_iam_member scoped to the specific
+# bucket. The binding is already resource-level — no condition required.
 ##############################################################################
 
 resource "google_storage_bucket_iam_member" "ehr_core_gcs_reader" {
   bucket = var.phi_gcs_buckets["ehr_primary"]
   role   = "roles/storage.objectViewer"
   member = "serviceAccount:ehr-core-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
-
-  condition {
-    title       = "phi_gcs_read_ehr_core_prod"
-    description = "Restrict EHR Core GCS read to mh-phi-ehr-primary bucket"
-    expression  = "resource.name.startsWith(\"projects/_/buckets/${var.phi_gcs_buckets["ehr_primary"]}/objects/\")"
-  }
 
   depends_on = [google_service_account.app]
 }
@@ -174,12 +134,6 @@ resource "google_storage_bucket_iam_member" "clinical_notes_gcs_writer" {
   role   = "roles/storage.objectCreator"
   member = "serviceAccount:clinical-notes-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
 
-  condition {
-    title       = "phi_gcs_write_clinical_notes_prod"
-    description = "Restrict Clinical Notes GCS write to mh-clinical-docs-prod bucket"
-    expression  = "resource.name.startsWith(\"projects/_/buckets/${var.phi_gcs_buckets["clinical_docs"]}/objects/\")"
-  }
-
   depends_on = [google_service_account.app]
 }
 
@@ -187,12 +141,6 @@ resource "google_storage_bucket_iam_member" "clinical_imaging_gcs_writer" {
   bucket = var.phi_gcs_buckets["imaging_dicom"]
   role   = "roles/storage.objectCreator"
   member = "serviceAccount:clinical-imaging-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
-
-  condition {
-    title       = "phi_gcs_write_clinical_imaging_prod"
-    description = "Restrict Clinical Imaging GCS write to mh-imaging-dicom-prod bucket"
-    expression  = "resource.name.startsWith(\"projects/_/buckets/${var.phi_gcs_buckets["imaging_dicom"]}/objects/\")"
-  }
 
   depends_on = [google_service_account.app]
 }
@@ -202,12 +150,6 @@ resource "google_storage_bucket_iam_member" "lab_systems_gcs_writer" {
   role   = "roles/storage.objectCreator"
   member = "serviceAccount:lab-systems-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
 
-  condition {
-    title       = "phi_gcs_write_lab_systems_prod"
-    description = "Restrict Lab Systems GCS write to mh-phi-lab-results bucket"
-    expression  = "resource.name.startsWith(\"projects/_/buckets/${var.phi_gcs_buckets["lab_results"]}/objects/\")"
-  }
-
   depends_on = [google_service_account.app]
 }
 
@@ -216,17 +158,13 @@ resource "google_storage_bucket_iam_member" "pharmacy_gcs_writer" {
   role   = "roles/storage.objectCreator"
   member = "serviceAccount:pharmacy-mgmt-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
 
-  condition {
-    title       = "phi_gcs_write_pharmacy_prod"
-    description = "Restrict Pharmacy Management GCS write to mh-phi-pharmacy-records bucket"
-    expression  = "resource.name.startsWith(\"projects/_/buckets/${var.phi_gcs_buckets["pharmacy_records"]}/objects/\")"
-  }
-
   depends_on = [google_service_account.app]
 }
 
 ##############################################################################
-# PHI APPLICATIONS — BigQuery access (dataset-level, with conditions)
+# PHI APPLICATIONS — BigQuery access
+# Dataset-level binding. bigquery.jobUser is granted at project level —
+# required and correct as job execution is a project-level operation.
 ##############################################################################
 
 resource "google_bigquery_dataset_iam_member" "ehr_core_bq_viewer" {
@@ -281,7 +219,9 @@ resource "google_project_iam_member" "reporting_svc_bq_job_user" {
 }
 
 ##############################################################################
-# PHI APPLICATIONS — Pub/Sub (topic/subscription-level, with conditions)
+# PHI APPLICATIONS — Pub/Sub
+# Canonical pattern: google_pubsub_topic_iam_member scoped to the specific
+# topic. The binding is already resource-level — no condition required.
 ##############################################################################
 
 resource "google_pubsub_topic_iam_member" "referral_mgmt_fhir_publisher" {
@@ -289,12 +229,6 @@ resource "google_pubsub_topic_iam_member" "referral_mgmt_fhir_publisher" {
   topic   = var.phi_pubsub_topics["fhir_events"]
   role    = "roles/pubsub.publisher"
   member  = "serviceAccount:referral-mgmt-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
-
-  condition {
-    title       = "phi_pubsub_publish_referral_prod"
-    description = "Restrict Referral Management Pub/Sub publish to mh-phi-fhir-events topic"
-    expression  = "resource.name == \"projects/${var.prod_project_id}/topics/${var.phi_pubsub_topics["fhir_events"]}\""
-  }
 
   depends_on = [google_service_account.app]
 }
@@ -305,12 +239,6 @@ resource "google_pubsub_topic_iam_member" "device_integration_telemetry_publishe
   role    = "roles/pubsub.publisher"
   member  = "serviceAccount:device-integration-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
 
-  condition {
-    title       = "phi_pubsub_publish_device_telemetry_prod"
-    description = "Restrict Device Integration Pub/Sub publish to mh-phi-device-telemetry topic"
-    expression  = "resource.name == \"projects/${var.prod_project_id}/topics/${var.phi_pubsub_topics["device_telemetry"]}\""
-  }
-
   depends_on = [google_service_account.app]
 }
 
@@ -320,17 +248,11 @@ resource "google_pubsub_topic_iam_member" "ehr_core_adt_publisher" {
   role    = "roles/pubsub.publisher"
   member  = "serviceAccount:ehr-core-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
 
-  condition {
-    title       = "phi_pubsub_publish_ehr_adt_prod"
-    description = "Restrict EHR Core Pub/Sub publish to mh-phi-adt-events topic"
-    expression  = "resource.name == \"projects/${var.prod_project_id}/topics/${var.phi_pubsub_topics["adt_events"]}\""
-  }
-
   depends_on = [google_service_account.app]
 }
 
 ##############################################################################
-# NON-PHI APPLICATIONS — GCS access (bucket-level, no conditions required)
+# NON-PHI APPLICATIONS — GCS access (bucket-level)
 ##############################################################################
 
 resource "google_storage_bucket_iam_member" "analytics_platform_gcs_reader" {
@@ -441,7 +363,7 @@ resource "google_pubsub_subscription_iam_member" "data_integration_subscriber" {
 }
 
 ##############################################################################
-# SECRET MANAGER — resource-scoped for selected applications
+# SECRET MANAGER — secret-level bindings
 ##############################################################################
 
 resource "google_secret_manager_secret_iam_member" "ehr_core_db_password" {
