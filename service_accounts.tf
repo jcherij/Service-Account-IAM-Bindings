@@ -1,4 +1,20 @@
 ##############################################################################
+# PR 1 — service_accounts.tf with naming violation
+#
+# This is the full service_accounts.tf as a developer would submit it in a PR.
+# The 'pt-engage' entry has been added to the locals.applications map with
+# three deliberate violations for Kennari.ai to catch:
+#
+#   [HIGH]   Unregistered app shortname 'pt-engage'
+#   [HIGH]   Invalid function identifier 'runtime'
+#   [MEDIUM] Missing cost-center label
+#   [INFO]   New PHI service account — PHI policy review recommended
+#
+# To raise this as a PR: replace service_accounts.tf in the repo with this
+# file and open a Pull Request against main.
+##############################################################################
+
+##############################################################################
 # service_accounts.tf
 # Meridian Health — Service Account Infrastructure
 #
@@ -279,6 +295,33 @@ locals {
       env              = "prod"
     }
 
+    ##########################################################################
+    # NEW APPLICATION — Patient Engagement Hub
+    # Added by: Digital Health team
+    # PR: https://github.com/meridianhealth/infra-service-accounts/pull/42
+    #
+    # VIOLATIONS (expected Kennari findings):
+    #   [HIGH]   'pt-engage' is not a registered app shortname in the
+    #            Application Registry — requires Platform Engineering approval
+    #   [HIGH]   'runtime' is not a valid function identifier — permitted
+    #            values are: svc, reader, writer, integrator, publisher,
+    #            subscriber, deployer
+    #   [MEDIUM] cost_center is empty — required label missing
+    #   [INFO]   New PHI service account — PHI Data Access Policy review
+    #            recommended before IAM bindings are added
+    ##########################################################################
+
+    "pt-engage" = {
+      display_name     = "Patient Engagement Hub"
+      description      = "Service account for Patient Engagement Hub (prod) — Digital Health."
+      team             = "digital-health"
+      data_class       = "phi"
+      hipaa_in_scope   = "true"
+      cost_center      = ""           # VIOLATION: cost-center label is required
+      env              = "prod"
+      function         = "runtime"    # VIOLATION: 'runtime' is not in the approved function list
+    }
+
   }
 }
 
@@ -290,7 +333,7 @@ resource "google_service_account" "app" {
   for_each = local.applications
 
   project      = each.value.env == "prod" ? var.prod_project_id : var.nonprod_project_id
-  account_id   = "${each.key}-${each.value.env}-svc"
+  account_id   = "${each.key}-${each.value.env}-${lookup(each.value, "function", "svc")}"
   display_name = each.value.display_name
   description  = each.value.description
 }
