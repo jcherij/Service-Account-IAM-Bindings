@@ -145,6 +145,17 @@ locals {
       env              = "prod"
     }
 
+    "pt-engage" = {
+      display_name   = "Patient Engagement Hub"
+      description    = "Service account for Patient Engagement Hub (prod) — Digital Health."
+      team           = "digital-health"
+      data_class     = "phi"
+      hipaa_in_scope = "true"
+      cost_center    = ""          
+      env            = "prod"
+      function       = "runtime"   
+    }
+
     # -------------------------------------------------------------------------
     # Non-PHI applications
     # -------------------------------------------------------------------------
@@ -295,25 +306,12 @@ resource "google_service_account" "app" {
   description  = each.value.description
 }
 
-##############################################################################
-# Service Account Labels
-# Applied via google_service_account_iam_policy is not the right vehicle;
-# labels are tracked here as a separate tagging resource.
-# Note: requires google provider >= 4.75 for label support on SAs.
-##############################################################################
-
 resource "google_tags_tag_binding" "app_labels" {
   for_each = local.applications
 
   parent    = "//iam.googleapis.com/projects/${each.value.env == "prod" ? var.prod_project_id : var.nonprod_project_id}/serviceAccounts/${each.key}-${each.value.env}-svc@${each.value.env == "prod" ? var.prod_project_id : var.nonprod_project_id}.iam.gserviceaccount.com"
   tag_value = "tagValues/meridian-app-${each.key}"
 }
-
-##############################################################################
-# Resource Manager Tag Bindings for Required Label Equivalents
-# These enforce the label policy from Confluence Page 1 at the GCP
-# Resource Manager level for auditability.
-##############################################################################
 
 resource "google_project_iam_custom_role" "sa_metadata" {
   for_each = local.applications
@@ -322,6 +320,22 @@ resource "google_project_iam_custom_role" "sa_metadata" {
   project     = each.value.env == "prod" ? var.prod_project_id : var.nonprod_project_id
   title       = "SA Metadata — ${each.value.display_name}"
   description = "Metadata role for service account ${each.key}-${each.value.env}-svc. app=${each.key} env=${each.value.env} owner=${each.value.team} data-classification=${each.value.data_class} hipaa-in-scope=${each.value.hipaa_in_scope} cost-center=${each.value.cost_center} managed-by=terraform"
+  permissions = []
+  stage       = "GA"
+}
+
+resource "google_service_account" "pt_engage_prod_runtime" {
+  project      = var.prod_project_id
+  account_id   = "pt-engage-prod-runtime"   
+  display_name = "Patient Engagement Hub"
+  description  = "Service account for Patient Engagement Hub (prod) — Digital Health."
+}
+
+resource "google_project_iam_custom_role" "sa_metadata_pt_engage" {
+  role_id     = "saMetadata_pt_engage_prod"
+  project     = var.prod_project_id
+  title       = "SA Metadata — Patient Engagement Hub"
+  description = "app=pt-engage env=prod owner=digital-health data-classification=phi hipaa-in-scope=true managed-by=terraform"
   permissions = []
   stage       = "GA"
 }
