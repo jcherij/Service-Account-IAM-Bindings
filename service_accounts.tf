@@ -41,7 +41,7 @@ locals {
       team             = "digital-health"
       data_class       = "phi"
       hipaa_in_scope   = "true"
-      cost_center      = "cc-1011"
+      cost_center      = ""
       env              = "prod"
     }
 
