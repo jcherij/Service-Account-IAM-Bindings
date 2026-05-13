@@ -130,7 +130,7 @@ locals {
       description      = "Service account for Medical Device Integration (prod) — Clinical Engineering. Ingests telemetry from bedside devices via Pub/Sub."
       team             = "clinical-engineering"
       data_class       = "phi"
-      hipaa_in_scope   = "true"
+      hipaa_in_scope   = "false"
       cost_center      = "cc-1020"
       env              = "prod"
     }
