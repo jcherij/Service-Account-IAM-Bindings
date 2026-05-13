@@ -401,3 +401,9 @@ resource "google_secret_manager_secret_iam_member" "identity_svc_okta_secret" {
 
   depends_on = [google_service_account.app]
 }
+
+resource "google_project_iam_member" "api_gateway_editor" {
+  project = var.prod_project_id
+  role    = "roles/editor"
+  member  = "serviceAccount:api-gateway-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
+}
