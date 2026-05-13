@@ -52,7 +52,7 @@ locals {
       data_class       = "phi"
       hipaa_in_scope   = "true"
       cost_center      = "cc-1012"
-      env              = "prod"
+      env              = "prod-test-myenv"
     }
 
     "lab-systems" = {
@@ -61,7 +61,7 @@ locals {
       team             = "clinical-engineering"
       data_class       = "phi"
       hipaa_in_scope   = "true"
-      cost_center      = "cc-1013"
+      cost_center      = ""
       env              = "prod"
     }
 
@@ -69,7 +69,7 @@ locals {
       display_name     = "Pharmacy Management"
       description      = "Service account for Pharmacy Management (prod) — Clinical Engineering. Reads and writes prescription records to Cloud SQL."
       team             = "clinical-engineering"
-      data_class       = "phi"
+      data_class       = ""
       hipaa_in_scope   = "true"
       cost_center      = "cc-1014"
       env              = "prod"
