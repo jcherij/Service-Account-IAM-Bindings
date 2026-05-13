@@ -30,7 +30,7 @@ locals {
       description      = "Service account for EHR Core System (prod) — Clinical Engineering. Handles HL7 FHIR API requests to Cloud SQL and GCS."
       team             = "clinical-engineering"
       data_class       = "phi"
-      hipaa_in_scope   = "true"
+      hipaa_in_scope   = "false"
       cost_center      = "cc-1010"
       env              = "prod"
     }
