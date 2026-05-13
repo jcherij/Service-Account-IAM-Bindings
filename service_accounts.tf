@@ -42,7 +42,7 @@ locals {
       data_class       = "phi"
       hipaa_in_scope   = "true"
       cost_center      = "cc-1011"
-      env              = "prod"
+      env              = "my-private-test"
     }
 
     "clinical-imaging" = {
@@ -51,7 +51,7 @@ locals {
       team             = "clinical-engineering"
       data_class       = "phi"
       hipaa_in_scope   = "true"
-      cost_center      = "cc-1012"
+      cost_center      = ""
       env              = "prod"
     }
 
