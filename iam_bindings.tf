@@ -48,69 +48,106 @@ resource "google_project_iam_member" "tracing" {
 
 ##############################################################################
 # PHI APPLICATIONS — Cloud SQL access
-# Canonical pattern: google_sql_database_instance_iam_member scoped directly
-# to the specific instance. No condition required.
+# roles/cloudsql.client is a project-level role. To restrict access to a
+# specific PHI instance, google_project_iam_member is used with an IAM
+# condition scoping the binding to the specific instance resource name.
+# This is the correct and supported GCP pattern for Cloud SQL IAM.
 ##############################################################################
 
-resource "google_sql_database_instance_iam_member" "ehr_core_cloudsql" {
-  project  = var.prod_project_id
-  instance = var.phi_cloudsql_instances["ehr_primary"]
-  role     = "roles/cloudsql.client"
-  member   = "serviceAccount:ehr-core-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
+resource "google_project_iam_member" "ehr_core_cloudsql" {
+  project = var.prod_project_id
+  role    = "roles/cloudsql.client"
+  member  = "serviceAccount:ehr-core-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
+
+  condition {
+    title       = "restrict_to_ehr_primary_instance"
+    description = "Only allow connection to the EHR primary Cloud SQL instance"
+    expression  = "resource.name == 'projects/${var.prod_project_id}/instances/${var.phi_cloudsql_instances["ehr_primary"]}' && resource.service == 'sqladmin.googleapis.com'"
+  }
 
   depends_on = [google_service_account.app]
 }
 
-resource "google_sql_database_instance_iam_member" "clinical_notes_cloudsql" {
-  project  = var.prod_project_id
-  instance = var.phi_cloudsql_instances["clinical_notes"]
-  role     = "roles/cloudsql.client"
-  member   = "serviceAccount:clinical-notes-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
+resource "google_project_iam_member" "clinical_notes_cloudsql" {
+  project = var.prod_project_id
+  role    = "roles/cloudsql.client"
+  member  = "serviceAccount:clinical-notes-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
+
+  condition {
+    title       = "restrict_to_clinical_notes_instance"
+    description = "Only allow connection to the clinical notes Cloud SQL instance"
+    expression  = "resource.name == 'projects/${var.prod_project_id}/instances/${var.phi_cloudsql_instances["clinical_notes"]}' && resource.service == 'sqladmin.googleapis.com'"
+  }
 
   depends_on = [google_service_account.app]
 }
 
-resource "google_sql_database_instance_iam_member" "lab_systems_cloudsql" {
-  project  = var.prod_project_id
-  instance = var.phi_cloudsql_instances["lab_systems"]
-  role     = "roles/cloudsql.client"
-  member   = "serviceAccount:lab-systems-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
+resource "google_project_iam_member" "lab_systems_cloudsql" {
+  project = var.prod_project_id
+  role    = "roles/cloudsql.client"
+  member  = "serviceAccount:lab-systems-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
+
+  condition {
+    title       = "restrict_to_lab_systems_instance"
+    description = "Only allow connection to the lab systems Cloud SQL instance"
+    expression  = "resource.name == 'projects/${var.prod_project_id}/instances/${var.phi_cloudsql_instances["lab_systems"]}' && resource.service == 'sqladmin.googleapis.com'"
+  }
 
   depends_on = [google_service_account.app]
 }
 
-resource "google_sql_database_instance_iam_member" "pharmacy_mgmt_cloudsql" {
-  project  = var.prod_project_id
-  instance = var.phi_cloudsql_instances["pharmacy"]
-  role     = "roles/cloudsql.client"
-  member   = "serviceAccount:pharmacy-mgmt-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
+resource "google_project_iam_member" "pharmacy_mgmt_cloudsql" {
+  project = var.prod_project_id
+  role    = "roles/cloudsql.client"
+  member  = "serviceAccount:pharmacy-mgmt-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
+
+  condition {
+    title       = "restrict_to_pharmacy_instance"
+    description = "Only allow connection to the pharmacy Cloud SQL instance"
+    expression  = "resource.name == 'projects/${var.prod_project_id}/instances/${var.phi_cloudsql_instances["pharmacy"]}' && resource.service == 'sqladmin.googleapis.com'"
+  }
 
   depends_on = [google_service_account.app]
 }
 
-resource "google_sql_database_instance_iam_member" "care_coordination_cloudsql" {
-  project  = var.prod_project_id
-  instance = var.phi_cloudsql_instances["care_coordination"]
-  role     = "roles/cloudsql.client"
-  member   = "serviceAccount:care-coordination-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
+resource "google_project_iam_member" "care_coordination_cloudsql" {
+  project = var.prod_project_id
+  role    = "roles/cloudsql.client"
+  member  = "serviceAccount:care-coordination-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
+
+  condition {
+    title       = "restrict_to_care_coordination_instance"
+    description = "Only allow connection to the care coordination Cloud SQL instance"
+    expression  = "resource.name == 'projects/${var.prod_project_id}/instances/${var.phi_cloudsql_instances["care_coordination"]}' && resource.service == 'sqladmin.googleapis.com'"
+  }
 
   depends_on = [google_service_account.app]
 }
 
-resource "google_sql_database_instance_iam_member" "medication_admin_cloudsql" {
-  project  = var.prod_project_id
-  instance = var.phi_cloudsql_instances["medication_admin"]
-  role     = "roles/cloudsql.client"
-  member   = "serviceAccount:medication-admin-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
+resource "google_project_iam_member" "medication_admin_cloudsql" {
+  project = var.prod_project_id
+  role    = "roles/cloudsql.client"
+  member  = "serviceAccount:medication-admin-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
+
+  condition {
+    title       = "restrict_to_medication_admin_instance"
+    description = "Only allow connection to the medication admin Cloud SQL instance"
+    expression  = "resource.name == 'projects/${var.prod_project_id}/instances/${var.phi_cloudsql_instances["medication_admin"]}' && resource.service == 'sqladmin.googleapis.com'"
+  }
 
   depends_on = [google_service_account.app]
 }
 
-resource "google_sql_database_instance_iam_member" "radiology_cloudsql" {
-  project  = var.prod_project_id
-  instance = var.phi_cloudsql_instances["radiology"]
-  role     = "roles/cloudsql.client"
-  member   = "serviceAccount:radiology-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
+resource "google_project_iam_member" "radiology_cloudsql" {
+  project = var.prod_project_id
+  role    = "roles/cloudsql.client"
+  member  = "serviceAccount:radiology-prod-svc@${var.prod_project_id}.iam.gserviceaccount.com"
+
+  condition {
+    title       = "restrict_to_radiology_instance"
+    description = "Only allow connection to the radiology Cloud SQL instance"
+    expression  = "resource.name == 'projects/${var.prod_project_id}/instances/${var.phi_cloudsql_instances["radiology"]}' && resource.service == 'sqladmin.googleapis.com'"
+  }
 
   depends_on = [google_service_account.app]
 }
